@@ -40,6 +40,25 @@ router.get("/", verifySession, async (req: Request, res: Response) => {
   }
 });
 
+// 🌟 ফিক্স: ইউজারের নিজস্ব টপিকগুলো নিয়ে আসার জন্য নতুন রাউট
+router.get("/my", verifySession, async (req: Request, res: Response) => {
+  const authReq = req as AuthenticatedRequest;
+  try {
+    const userId = authReq.user!.id;
+
+    // শুধুমাত্র ওই ইউজারের টপিকগুলো ফেচ করা
+    const items = await topicsCollection
+      .find({ ownerId: userId })
+      .sort({ _id: -1 })
+      .toArray();
+
+    res.json({ items, total: items.length });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 // 🔥 GET /api/topics/:id - নির্দিষ্ট একটা টপিক ডিটেইলস নিয়ে আসার রাউট (ফিক্সড)
 router.get("/:id", verifySession, async (req: Request, res: Response) => {
   try {
@@ -101,6 +120,110 @@ router.delete("/:id", verifySession, async (req: Request, res: Response) => {
     res.json({ success: true, message: "Topic deleted successfully" });
   } catch (error) {
     res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+router.post("/", verifySession, async (req: Request, res: Response) => {
+  const authReq = req as AuthenticatedRequest;
+
+  try {
+    const { name, description, category } = req.body;
+
+    if (!name || !name.trim()) {
+      return res.status(400).json({
+        message: "Topic name is required",
+      });
+    }
+
+    const topic = {
+      name: name.trim(),
+      description: description ?? "",
+      category: category ?? "General",
+
+      ownerId: authReq.user!.id,
+      ownerName: authReq.user!.name,
+
+      conceptCount: 0,
+      masteredCount: 0,
+
+      concepts: [],
+
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    const result = await topicsCollection.insertOne(topic as any);
+
+    res.status(201).json({
+      ...topic,
+      _id: result.insertedId.toString(),
+    });
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      message: "Server error",
+    });
+  }
+});
+
+router.patch("/:id", verifySession, async (req: Request, res: Response) => {
+  const authReq = req as AuthenticatedRequest;
+
+  try {
+    const id = String(req.params.id);
+
+    if (!ObjectId.isValid(String(id))) {
+      return res.status(400).json({
+        message: "Invalid Topic ID",
+      });
+    }
+
+    const topic = await topicsCollection.findOne({
+      _id: new ObjectId(String(id)),
+    });
+
+    if (!topic) {
+      return res.status(404).json({
+        message: "Topic not found",
+      });
+    }
+
+    const topicData = topic as any;
+
+    if (topicData.ownerId !== authReq.user!.id) {
+      return res.status(403).json({
+        message: "Forbidden",
+      });
+    }
+
+    const updateData = {
+      name: req.body.name?.trim(),
+      description: req.body.description,
+      category: req.body.category,
+      updatedAt: new Date().toISOString(),
+    };
+
+    await topicsCollection.updateOne(
+      {
+        _id: new ObjectId(String(id)),
+      },
+      {
+        $set: updateData,
+      },
+    );
+
+    const updated = await topicsCollection.findOne({
+      _id: new ObjectId(String(id)),
+    });
+
+    res.json(updated);
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      message: "Server error",
+    });
   }
 });
 
