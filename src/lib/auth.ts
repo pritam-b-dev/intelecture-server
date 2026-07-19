@@ -40,7 +40,8 @@ export const auth = betterAuth({
   advanced: {
     defaultCookieAttributes: {
       sameSite: "lax",
-      secure: true,
+      // 🌟 ফিক্সড: লোকাল হোস্টের সাধারণ HTTP-তে যেন কুকি ব্লক না হয়, তাই প্রোডাকশন চেক বসানো হলো
+      secure: process.env.NODE_ENV === "production",
     },
   },
 
