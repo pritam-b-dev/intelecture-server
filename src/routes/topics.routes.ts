@@ -16,36 +16,29 @@ interface AuthenticatedRequest extends Request {
 const router = Router();
 
 // 🌟 B5: GET /api/topics - টপিক লিস্ট ফেচ করার রাউট (নতুন যুক্ত হলো)
-router.get("/", verifySession, async (req: Request, res: Response) => {
+router.get("/", async (req: Request, res: Response) => {
   try {
-    // ফ্রন্টএন্ড থেকে আসা কুয়েরি প্যারামিটারগুলো নেওয়া হচ্ছে
     const { category, sort } = req.query;
 
-    // ১. ক্যাটাগরি অনুযায়ী ফিল্টার কুয়েরি তৈরি
     const query: any = {};
+
     if (category && category !== "all") {
-      query.category = category; // আপনার ডাটাবেজের ফিল্ড নেম অনুযায়ী মিলিয়ে নেবেন
+      query.category = category;
     }
 
-    // ২. সোর্টিং (Sort) লজিক তৈরি
-    let sortOption: any = { _id: -1 }; // ডিফল্ট: Newest (নতুনগুলো আগে)
+    let sortOption: any = { _id: -1 };
 
     if (sort === "popularity") {
-      // পপুলারিটি সোর্ট: আমরা ধরে নিচ্ছি যে টপিকে conceptCount বেশি, সেটা বেশি পপুলার
       sortOption = { conceptCount: -1 };
-    } else if (sort === "newest") {
-      sortOption = { _id: -1 };
     }
 
-    // ৩. ডাটাবেজ থেকে ডেটা খোঁজা এবং টোটাল কাউন্ট বের করা
     const items = await topicsCollection.find(query).sort(sortOption).toArray();
     const total = await topicsCollection.countDocuments(query);
 
-    // ৪. ফ্রন্টএন্ডের কাঙ্ক্ষিত অবজেক্ট স্ট্রাকচারে রেসপন্স পাঠানো
     res.json({ items, total });
   } catch (error) {
-    console.error("Error fetching topics:", error);
-    res.status(500).json({ success: false, message: "Server error" });
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
   }
 });
 

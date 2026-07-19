@@ -22,55 +22,74 @@ export const verifySession = async (
   next: NextFunction,
 ) => {
   try {
-    //  Node.js (Express) হেডারকে Web Standard Headers অবজেক্টে রূপান্তর করুন
     const webHeaders = new Headers();
+
     Object.entries(req.headers).forEach(([key, value]) => {
       if (Array.isArray(value)) {
         value.forEach((v) => webHeaders.append(key, v));
       } else if (value) {
-        webHeaders.set(key, value);
+        webHeaders.set(key, String(value));
       }
     });
 
-    //  এবার BetterAuth-এর কাছে স্ট্যান্ডার্ড ওয়েব হেডারটি পাস করুন
     const sessionData = await auth.api.getSession({
       headers: webHeaders,
     });
 
-    if (!sessionData || !sessionData.session) {
+    console.log("==================================");
+    console.log("COOKIE =", req.headers.cookie);
+    console.log("SESSION DATA =", sessionData);
+    console.log("==================================");
+
+    if (!sessionData || !sessionData.session || !sessionData.user) {
       return res.status(401).json({
         status: "error",
-        message: "Unauthorized: Invalid or expired session",
+        message: "Unauthorized",
       });
     }
 
-    const { session } = sessionData;
+    const { session, user: authUser } = sessionData;
 
-    const user = await usersCollection.findOne({
-      $or: [{ id: session.userId }, { _id: session.userId as any }],
+    let user = await usersCollection.findOne({
+      id: session.userId,
     });
+
+    if (!user) {
+      user = await usersCollection.findOne({
+        email: authUser.email,
+      });
+    }
+
+    if (!user && session.userId) {
+      try {
+        user = await usersCollection.findOne({
+          _id: session.userId as any,
+        });
+      } catch {}
+    }
 
     if (!user) {
       return res.status(401).json({
         status: "error",
-        message: "Unauthorized: Associated user record not found",
+        message: "User not found",
       });
     }
 
     req.user = {
-      id: user.id || user._id.toString(),
+      id: user.id ?? user._id.toString(),
       email: user.email,
-      role: user.role as "user" | "admin",
+      role: (user.role ?? "user") as "user" | "admin",
       learningLevel: user.learningLevel,
       name: user.name,
     };
 
-    return next();
+    next();
   } catch (error) {
-    console.error("[Middleware Error - verifySession]:", error);
+    console.error(error);
+
     return res.status(401).json({
       status: "error",
-      message: "Unauthorized: Session verification failed",
+      message: "Unauthorized",
     });
   }
 };

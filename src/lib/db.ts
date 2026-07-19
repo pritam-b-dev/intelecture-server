@@ -47,7 +47,7 @@ export interface NoteDocument extends Omit<Note, "_id"> {
 /* -------------------------------------------------------------------------- */
 /*                        Typed MongoDB Collections                           */
 /* -------------------------------------------------------------------------- */
-export const usersCollection: Collection<UserDocument> = db.collection("users");
+export const usersCollection: Collection<UserDocument> = db.collection("user");
 export const sessionCollection: Collection<any> = db.collection("sessions");
 
 export const topicsCollection: Collection<TopicDocument> =
