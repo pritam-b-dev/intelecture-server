@@ -4,6 +4,8 @@ import dotenv from "dotenv";
 import { toNodeHandler } from "better-auth/node";
 
 import { auth } from "./lib/auth.js";
+// 🌟 ১. আপনার টপিক রাউটটি ইম্পোর্ট করুন (পাথ ঠিক আছে কিনা দেখে নেবেন)
+import topicRouter from "./routes/topics.routes.js";
 
 dotenv.config();
 
@@ -26,6 +28,11 @@ app.use(express.json());
 /*                            BetterAuth Mounting                             */
 /* -------------------------------------------------------------------------- */
 app.all("/api/auth/*any", toNodeHandler(auth));
+
+/* -------------------------------------------------------------------------- */
+/* 🌟 ২. Topics Route Mounting - এই লাইনটি যোগ করুন 🌟                           */
+/* -------------------------------------------------------------------------- */
+app.use("/api/topics", topicRouter);
 
 /* -------------------------------------------------------------------------- */
 /*                                Health Check                                */
