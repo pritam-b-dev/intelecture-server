@@ -2,8 +2,7 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import { toNodeHandler } from "better-auth/node";
-// Importing with .js extensions is strictly required
-import { client } from "./lib/db.js";
+
 import { auth } from "./lib/auth.js";
 
 dotenv.config();
@@ -26,8 +25,8 @@ app.use(express.json());
 /* -------------------------------------------------------------------------- */
 /*                            BetterAuth Mounting                             */
 /* -------------------------------------------------------------------------- */
-// Mount BetterAuth api routes at /api/auth/* using the Node native handler
 app.all("/api/auth/*any", toNodeHandler(auth));
+
 /* -------------------------------------------------------------------------- */
 /*                                Health Check                                */
 /* -------------------------------------------------------------------------- */
@@ -38,13 +37,13 @@ app.get("/", (req, res) => {
   });
 });
 
-app.get("/health", (req, res) => {
-  res.status(200).send("Intelecture server running");
+app.get("/api/health", (req, res) => {
+  res.status(200).json({
+    status: "ok",
+    uptime: process.uptime(),
+  });
 });
 
-/* -------------------------------------------------------------------------- */
-/*                               Start Listening                              */
-/* -------------------------------------------------------------------------- */
 app.listen(PORT, () => {
   console.log(`[server]: Intelecture server running on port ${PORT}`);
 });

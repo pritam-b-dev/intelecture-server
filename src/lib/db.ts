@@ -1,4 +1,4 @@
-import { MongoClient, Db, Collection } from "mongodb";
+import { MongoClient, Db, Collection, ObjectId } from "mongodb";
 import dotenv from "dotenv";
 import {
   User,
@@ -28,19 +28,39 @@ export const db: Db = client.db("intelecture_db");
 console.log("[database]: Connected successfully to MongoDB (intelecture_db)");
 
 /* -------------------------------------------------------------------------- */
-/*                         Typed MongoDB Collections                          */
+/*                        Database Document Interfaces                        */
 /* -------------------------------------------------------------------------- */
-export const usersCollection: Collection<User> = db.collection<User>("users");
-export const sessionCollection: Collection<any> =
-  db.collection<any>("sessions"); // BetterAuth manages session schema dynamically
-export const topicsCollection: Collection<Topic> =
-  db.collection<Topic>("topics");
-export const conceptsCollection: Collection<Concept> =
-  db.collection<Concept>("concepts");
-export const notesCollection: Collection<Note> = db.collection<Note>("notes");
+// 🌟 ইন্টারসেকশনের বদলে ইন্টারফেস ব্যবহার করায় টাইপস্ক্রিপ্ট ইনসার্ট লজিক সহজে বুঝবে
+export interface UserDocument extends Omit<User, "_id"> {
+  _id?: ObjectId;
+}
+export interface TopicDocument extends Omit<Topic, "_id"> {
+  _id?: ObjectId;
+}
+export interface ConceptDocument extends Omit<Concept, "_id"> {
+  _id?: ObjectId;
+}
+export interface NoteDocument extends Omit<Note, "_id"> {
+  _id?: ObjectId;
+}
+
+/* -------------------------------------------------------------------------- */
+/*                        Typed MongoDB Collections                           */
+/* -------------------------------------------------------------------------- */
+export const usersCollection: Collection<UserDocument> = db.collection("users");
+export const sessionCollection: Collection<any> = db.collection("sessions");
+
+export const topicsCollection: Collection<TopicDocument> =
+  db.collection("topics");
+// 🌟 এবার এই কালেকশনটি ইনসার্ট করার সময় _id ছাড়া ডেটা গ্রহণ করবে!
+export const conceptsCollection: Collection<ConceptDocument> =
+  db.collection("concepts");
+
+export const notesCollection: Collection<NoteDocument> = db.collection("notes");
+
 export const recommendationsCollection: Collection<Recommendation> =
   db.collection<Recommendation>("recommendations");
+
 export const chatHistoryCollection: Collection<ChatMessage> =
   db.collection<ChatMessage>("chatHistory");
-
 export { client };

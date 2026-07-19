@@ -7,7 +7,7 @@ export type LearningStatus = "not_started" | "learning" | "mastered";
 export type RecommendationPriority = 1 | 2 | 3;
 
 /* -------------------------------------------------------------------------- */
-/*                                 User Type                                  */
+/*                                  User Type                                 */
 /* -------------------------------------------------------------------------- */
 export interface User {
   _id?: string;
@@ -17,7 +17,7 @@ export interface User {
   image?: string;
   role: UserRole;
   learningLevel?: LearningLevel;
-  createdAt: Date;
+  createdAt: string; // 🌟 Changed from Date to string
 }
 
 /* -------------------------------------------------------------------------- */
@@ -32,8 +32,8 @@ export interface Topic {
   ownerName: string;
   conceptCount: number;
   masteredCount: number;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string; // 🌟 Changed from Date to string
+  updatedAt: string; // 🌟 Changed from Date to string
 }
 
 /* -------------------------------------------------------------------------- */
@@ -46,12 +46,12 @@ export interface Concept {
   description: string;
   difficulty: Difficulty;
   status: LearningStatus;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string; // 🌟 Changed from Date to string
+  updatedAt: string; // 🌟 Changed from Date to string
 }
 
 /* -------------------------------------------------------------------------- */
-/*                                 Note Type                                  */
+/*                                  Note Type                                 */
 /* -------------------------------------------------------------------------- */
 export interface Note {
   _id: string;
@@ -60,8 +60,8 @@ export interface Note {
   title: string;
   content: string;
   status: LearningStatus;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string; // 🌟 Changed from Date to string
+  updatedAt: string; // 🌟 Changed from Date to string
 }
 
 /* -------------------------------------------------------------------------- */
@@ -76,11 +76,11 @@ export interface Recommendation {
   priority: RecommendationPriority;
   difficulty: Difficulty;
   aiGenerated: boolean;
-  generatedAt?: Date;
+  generatedAt?: string; // 🌟 Changed from Date to string
 }
 
 /* -------------------------------------------------------------------------- */
-/*                              Chat Message Type                             */
+/*                               Chat Message Type                            */
 /* -------------------------------------------------------------------------- */
 export interface ChatMessage {
   _id?: string;
@@ -88,5 +88,5 @@ export interface ChatMessage {
   conceptId: string;
   role: "user" | "assistant";
   message: string;
-  timestamp: Date;
+  timestamp: string; // 🌟 Changed from Date to string
 }
