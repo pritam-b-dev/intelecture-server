@@ -1,14 +1,15 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-// Importing with .js extension is required for module: NodeNext
+import { toNodeHandler } from "better-auth/node";
+// Importing with .js extensions is strictly required
 import { client } from "./lib/db.js";
+import { auth } from "./lib/auth.js";
 
 dotenv.config();
 
 const app = express();
 
-// Export PORT as a constant per guidelines
 export const PORT = process.env.PORT || 5000;
 
 /* -------------------------------------------------------------------------- */
@@ -23,9 +24,13 @@ app.use(
 app.use(express.json());
 
 /* -------------------------------------------------------------------------- */
+/*                            BetterAuth Mounting                             */
+/* -------------------------------------------------------------------------- */
+// Mount BetterAuth api routes at /api/auth/* using the Node native handler
+app.all("/api/auth/*any", toNodeHandler(auth));
+/* -------------------------------------------------------------------------- */
 /*                                Health Check                                */
 /* -------------------------------------------------------------------------- */
-// B2 Strict JSON Health Check
 app.get("/", (req, res) => {
   res.status(200).json({
     status: "ok",
@@ -33,7 +38,6 @@ app.get("/", (req, res) => {
   });
 });
 
-// Optional: Retaining the B1 plain text health check if client needs a fallback
 app.get("/health", (req, res) => {
   res.status(200).send("Intelecture server running");
 });
