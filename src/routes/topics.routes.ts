@@ -64,6 +64,7 @@ router.post("/", verifySession, async (req: Request, res: Response) => {
       masteredCount: 0,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+      image: req.body.image || "",
     };
     const result = await topicsCollection.insertOne(newTopic as any);
     res.status(201).json({ ...newTopic, _id: result.insertedId });

@@ -39,6 +39,7 @@ export interface TopicDocument extends Omit<Topic, "_id"> {
 }
 export interface ConceptDocument extends Omit<Concept, "_id"> {
   _id?: ObjectId;
+  image?: string;
 }
 export interface NoteDocument extends Omit<Note, "_id"> {
   _id?: ObjectId;

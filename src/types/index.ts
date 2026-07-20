@@ -34,6 +34,7 @@ export interface Topic {
   masteredCount: number;
   createdAt: string; // 🌟 Changed from Date to string
   updatedAt: string; // 🌟 Changed from Date to string
+  image?: string;
 }
 
 /* -------------------------------------------------------------------------- */
