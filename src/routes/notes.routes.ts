@@ -45,4 +45,61 @@ router.post("/", verifySession, async (req: Request, res: Response) => {
   }
 });
 
+// ৩. আইডি দিয়ে নির্দিষ্ট নোট খোঁজার রাউট (প্রি-ফিলের জন্য লাগবে)
+router.get("/:id", verifySession, async (req: Request, res: Response) => {
+  try {
+    const noteId = req.params.id as string;
+
+    if (!ObjectId.isValid(noteId)) {
+      return res.status(400).json({ message: "Invalid Note ID format" });
+    }
+
+    const note = await notesCollection.findOne({
+      _id: new ObjectId(noteId),
+    });
+
+    if (!note) {
+      return res.status(404).json({ message: "Note not found" });
+    }
+
+    res.json({ success: true, data: note });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// ৪. নোট আপডেট করার রাউট (PUT Method)
+router.put("/:id", verifySession, async (req: Request, res: Response) => {
+  try {
+    const noteId = req.params.id as string;
+
+    if (!ObjectId.isValid(noteId)) {
+      return res.status(400).json({ message: "Invalid Note ID format" });
+    }
+
+    const { title, content, status } = req.body;
+
+    // ডাইনামিকালি আপডেট অবজেক্ট তৈরি
+    const updateData: Record<string, any> = {};
+    if (title !== undefined) updateData.title = title;
+    if (content !== undefined) updateData.content = content;
+    if (status !== undefined) updateData.status = status;
+    updateData.updatedAt = new Date().toISOString();
+
+    const result = await notesCollection.findOneAndUpdate(
+      { _id: new ObjectId(noteId) },
+      { $set: updateData },
+      { returnDocument: "after" },
+    );
+
+    if (!result) {
+      return res.status(404).json({ message: "Note not found" });
+    }
+
+    res.json({ success: true, data: result });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
 export default router;
