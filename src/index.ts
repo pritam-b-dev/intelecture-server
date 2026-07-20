@@ -9,6 +9,7 @@ import topicRouter from "./routes/topics.routes.js";
 import recommendationsRouter from "./routes/recommendations.routes.js";
 import notesRouter from "./routes/notes.routes.js";
 import topicsRouter from "./routes/topics.routes.js";
+import chatRouter from "./routes/chat.routes.js";
 
 dotenv.config();
 
@@ -41,6 +42,7 @@ app.use("/api/recommendations", recommendationsRouter);
 
 app.use("/api/notes", notesRouter);
 app.use("/api/topics", topicsRouter);
+app.use("/api/chat", chatRouter);
 
 /* -------------------------------------------------------------------------- */
 /*                                Health Check                                */
