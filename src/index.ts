@@ -37,9 +37,7 @@ app.all("/api/auth/*any", toNodeHandler(auth));
 /* 🌟 ২. Topics Route Mounting - এই লাইনটি যোগ করুন 🌟                           */
 /* -------------------------------------------------------------------------- */
 app.use("/api/topics", topicRouter);
-
 app.use("/api/recommendations", recommendationsRouter);
-
 app.use("/api/notes", notesRouter);
 app.use("/api/topics", topicsRouter);
 app.use("/api/chat", chatRouter);
@@ -60,6 +58,18 @@ app.get("/api/health", (req, res) => {
     uptime: process.uptime(),
   });
 });
+
+app.use(
+  (
+    err: any,
+    req: express.Request,
+    res: express.Response,
+    next: express.NextFunction,
+  ) => {
+    console.error("❌ Global Error Handler:", err);
+    res.status(500).json({ error: "Internal server error" });
+  },
+);
 
 app.listen(PORT, () => {
   console.log(`[server]: Intelecture server running on port ${PORT}`);
