@@ -14,3 +14,6 @@ if (!apiKey) {
 export const anthropic = new Anthropic({
   apiKey: apiKey || "",
 });
+
+// 🌟 আগের এবং নতুন দুটোর সাথেই ম্যাচ করার জন্য এলিয়াস (Alias)
+export const llm = anthropic;

@@ -6,6 +6,7 @@ import { toNodeHandler } from "better-auth/node";
 import { auth } from "./lib/auth.js";
 // 🌟 ১. আপনার টপিক রাউটটি ইম্পোর্ট করুন (পাথ ঠিক আছে কিনা দেখে নেবেন)
 import topicRouter from "./routes/topics.routes.js";
+import recommendationsRouter from "./routes/recommendations.routes.js";
 
 dotenv.config();
 
@@ -33,6 +34,8 @@ app.all("/api/auth/*any", toNodeHandler(auth));
 /* 🌟 ২. Topics Route Mounting - এই লাইনটি যোগ করুন 🌟                           */
 /* -------------------------------------------------------------------------- */
 app.use("/api/topics", topicRouter);
+
+app.use("/api/recommendations", recommendationsRouter);
 
 /* -------------------------------------------------------------------------- */
 /*                                Health Check                                */
