@@ -11,4 +11,8 @@ if (!apiKey) {
   );
 }
 
-export const groq = new Groq({ apiKey: apiKey || "" });
+const GroqClient = Groq as unknown as new (config: { apiKey: string }) => Groq;
+
+export const groq = new GroqClient({
+  apiKey: apiKey || "",
+});
