@@ -1,4 +1,4 @@
-import Groq from "groq-sdk";
+import { Groq } from "groq-sdk";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -11,8 +11,7 @@ if (!apiKey) {
   );
 }
 
-const GroqClient = Groq as unknown as new (config: { apiKey: string }) => Groq;
-
-export const groq = new GroqClient({
-  apiKey: apiKey || "",
-});
+export const groq = {} as any;
+// export const groq = new Groq({
+//   apiKey: apiKey || "",
+// });
