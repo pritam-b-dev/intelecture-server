@@ -1,10 +1,9 @@
 import { Router, Request, Response } from "express";
 import { ObjectId } from "mongodb";
 import Anthropic from "@anthropic-ai/sdk";
-import { fromNodeHeaders } from "better-auth/node";
 
-import { auth } from "../lib/auth.js";
 import { chatHistoryCollection, conceptsCollection } from "../lib/db.js";
+import { verifySession } from "../middleware/verifySession.js"; // 👈 সঠিক ফাইলের পাথ আপডেট করা হলো
 
 const router = Router();
 
@@ -14,21 +13,86 @@ const anthropic = new Anthropic({
 });
 
 /**
- * 🌟 POST /api/chat/stream
- * Better Auth Session + Anthropic SSE Streaming Chat Endpoint
+ * 🌟 POST /api/chat/message (B7)
+ * একটি সিঙ্গেল মেসেজ (user/assistant) ডাটাবেজে সেভ করা
  */
-router.post("/stream", async (req: Request, res: Response) => {
+router.post("/message", verifySession, async (req: Request, res: Response) => {
   try {
-    // ১. Better Auth দিয়ে সেশন ভ্যালিডেশন
-    const session = await auth.api.getSession({
-      headers: fromNodeHeaders(req.headers),
-    });
+    const userId = req.user!.id;
+    const { conceptId, message, role = "user" } = req.body;
 
-    if (!session || !session.user) {
-      return res.status(401).json({ message: "Unauthorized: Invalid session" });
+    if (!conceptId || !message) {
+      return res
+        .status(400)
+        .json({ message: "conceptId and message are required" });
     }
 
-    const userId = session.user.id;
+    const newMessage = {
+      userId,
+      conceptId,
+      role: role as "user" | "assistant",
+      message,
+      timestamp: new Date().toISOString(),
+    };
+
+    const result = await chatHistoryCollection.insertOne(newMessage);
+
+    return res.status(201).json({
+      _id: result.insertedId,
+      ...newMessage,
+    });
+  } catch (error) {
+    console.error("❌ Error in POST /api/chat/message:", error);
+    return res.status(500).json({ message: "Failed to store chat message" });
+  }
+});
+
+/**
+ * 🌟 GET /api/chat/history?conceptId=X (B7)
+ * নির্দিষ্ট কনসেপ্টের সর্বশেষ ২০টি মেসেজ ফেচ করা (ফ্ল্যাট লিস্ট)
+ */
+router.get("/history", verifySession, async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.id;
+    const { conceptId } = req.query;
+
+    if (!conceptId) {
+      return res
+        .status(400)
+        .json({ message: "conceptId query parameter is required" });
+    }
+
+    // নির্দিষ্ট কনসেপ্টের শেষ ২০টি মেসেজ আনো
+    const docs = await chatHistoryCollection
+      .find({ userId, conceptId: conceptId as string })
+      .sort({ timestamp: -1 })
+      .limit(20)
+      .toArray();
+
+    // ক্রমানুসারে সাজিয়ে নেওয়া হলো (পুরনো থেকে নতুন)
+    const history = docs.reverse().map((doc) => ({
+      _id: doc._id,
+      userId: doc.userId,
+      conceptId: doc.conceptId,
+      role: doc.role,
+      message: doc.message,
+      timestamp: doc.timestamp,
+    }));
+
+    return res.json(history);
+  } catch (error) {
+    console.error("❌ Error in GET /api/chat/history:", error);
+    return res.status(500).json({ message: "Failed to fetch chat history" });
+  }
+});
+
+/**
+ * 🌟 POST /api/chat/stream (B9)
+ * Anthropic SSE Streaming Chat Endpoint
+ */
+router.post("/stream", verifySession, async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.id;
     const { conceptId, message } = req.body;
 
     if (!conceptId || !message) {
@@ -37,7 +101,7 @@ router.post("/stream", async (req: Request, res: Response) => {
         .json({ message: "conceptId and message are required" });
     }
 
-    // ২. কনসেপ্ট ডিটেইলস ফেচ করা (নাম ও ডেসক্রিপশন)
+    // ১. কনসেপ্ট ডিটেইলস ফেচ করা
     const conceptQuery = ObjectId.isValid(conceptId)
       ? { _id: new ObjectId(conceptId) }
       : { _id: conceptId };
@@ -47,23 +111,21 @@ router.post("/stream", async (req: Request, res: Response) => {
     const conceptDescription =
       concept?.description || "No specific description available.";
 
-    // ৩. আগের কনভারসেশন হিস্ট্রি ফেচ করা (সর্বশেষ ৫ জোড়া / ১০টি মেসেজ)
+    // ২. আগের কনভারসেশন হিস্ট্রি ফেচ করা (সর্বশেষ ১০টি মেসেজ)
     const historyDocs = await chatHistoryCollection
       .find({ userId, conceptId })
       .sort({ timestamp: -1 })
       .limit(10)
       .toArray();
 
-    // হিস্ট্রি ক্রমানুসারে সাজানো (Oldest to Newest)
     const history = historyDocs.reverse();
 
-    // Anthropic-এর মেসেজ ফরম্যাটে রূপান্তর
     const formattedHistory: Anthropic.MessageParam[] = history.map((doc) => ({
       role: doc.role === "user" ? "user" : "assistant",
       content: doc.message,
     }));
 
-    // ৪. বর্তমান ইউজার মেসেজ ডাটাবেজে সেভ করা
+    // ৩. বর্তমান ইউজার মেসেজ ডাটাবেজে সেভ করা
     const userMsgDoc = {
       userId,
       conceptId,
@@ -73,13 +135,12 @@ router.post("/stream", async (req: Request, res: Response) => {
     };
     await chatHistoryCollection.insertOne(userMsgDoc);
 
-    // বর্তমান মেসেজটি Anthropic হিস্ট্রিতে যোগ করা
     formattedHistory.push({
       role: "user",
       content: message,
     });
 
-    // ৫. সিস্টেম প্রম্পট তৈরি করা
+    // ৪. সিস্টেম প্রম্পট তৈরি করা
     const systemPrompt = `You are a friendly and knowledgeable AI tutor helping a student learn about "${conceptName}". 
 Context / Description: ${conceptDescription}. 
 Explain concepts clearly, concisely, and keep your answers engaging.`;
@@ -89,7 +150,7 @@ Explain concepts clearly, concisely, and keep your answers engaging.`;
     res.setHeader("Cache-Control", "no-cache");
     res.setHeader("Connection", "keep-alive");
 
-    // ৬. Anthropic-এর সাথে Streaming Call (Claude 3.5 Sonnet)
+    // ৫. Anthropic-এর সাথে Streaming Call
     const stream = await anthropic.messages.create({
       model: "claude-3-5-sonnet-20241022",
       max_tokens: 1024,
@@ -100,7 +161,6 @@ Explain concepts clearly, concisely, and keep your answers engaging.`;
 
     let assistantFullResponse = "";
 
-    // চ্যাঙ্ক বাই চ্যাঙ্ক ক্লায়েন্টে পাঠানো
     for await (const chunk of stream) {
       if (
         chunk.type === "content_block_delta" &&
@@ -109,16 +169,14 @@ Explain concepts clearly, concisely, and keep your answers engaging.`;
         const textChunk = chunk.delta.text;
         assistantFullResponse += textChunk;
 
-        // ক্লায়েন্টে ডেটা পাঠানো
         res.write(`data: ${JSON.stringify({ text: textChunk })}\n\n`);
       }
     }
 
-    // স্ট্রিম শেষ বোঝাতে [DONE] সিগন্যাল পাঠানো
     res.write("data: [DONE]\n\n");
     res.end();
 
-    // ৭. AI-এর সম্পূর্ণ রেসপন্স ডাটাবেজে সেভ করা
+    // ৬. AI-এর সম্পূর্ণ রেসপন্স ডাটাবেজে সেভ করা
     if (assistantFullResponse) {
       await chatHistoryCollection.insertOne({
         userId,
