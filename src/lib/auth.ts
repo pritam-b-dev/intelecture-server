@@ -6,6 +6,7 @@ import { db } from "./db.js";
 const clientUrl = process.env.CLIENT_URL || "http://localhost:3000";
 
 export const auth = betterAuth({
+  baseURL: process.env.BETTER_AUTH_URL,
   // Native MongoDB instance passed directly to the adapter
   database: mongodbAdapter(db),
 
@@ -39,8 +40,8 @@ export const auth = betterAuth({
   // 4. Cross-Origin Cookie Attributes for Subdomains/Different Domains
   advanced: {
     defaultCookieAttributes: {
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
+      sameSite: "none",
+      secure: true,
     },
   },
 
