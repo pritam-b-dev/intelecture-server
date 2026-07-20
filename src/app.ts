@@ -32,14 +32,14 @@ app.use("/api/notes", noteRouter);
 app.use("/api/recommendations", recommendationRouter);
 app.use("/api/chat", chatRouter);
 
-app.get("/", (req, res) => {
+app.get("/", (_, res) => {
   res.json({
     status: "ok",
     message: "Intelecture server running",
   });
 });
 
-app.get("/api/health", (req, res) => {
+app.get("/api/health", (_, res) => {
   res.json({
     status: "ok",
     uptime: process.uptime(),
