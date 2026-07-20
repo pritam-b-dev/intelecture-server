@@ -16,7 +16,7 @@ interface AuthenticatedRequest extends Request {
 const router = Router();
 
 // 🌟 B5: GET /api/topics - সব টপিক লিস্ট ফেচ করার রাউট
-router.get("/", verifySession, async (req: Request, res: Response) => {
+router.get("/", async (req: Request, res: Response) => {
   try {
     const { category, sort } = req.query;
     const query: any = {};
