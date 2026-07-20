@@ -16,6 +16,37 @@ interface AuthenticatedRequest extends Request {
 
 const router = Router();
 
+/**
+ * 🌟 GET /api/notes
+ * ইউজারের সব নোট অথবা নির্দিষ্ট conceptId-এর নোটস ফেচ করার রাউট
+ */
+router.get("/", verifySession, async (req: Request, res: Response) => {
+  const authReq = req as AuthenticatedRequest;
+
+  try {
+    const userId = authReq.user!.id;
+    const { conceptId } = req.query;
+
+    // ফিল্টার অবজেক্ট তৈরি
+    const filter: Record<string, any> = { userId };
+
+    // যদি কুয়েরিতে conceptId থাকে (যেমন: /api/notes?conceptId=xxx)
+    if (conceptId) {
+      filter.conceptId = conceptId as string;
+    }
+
+    const notes = await notesCollection.find(filter).toArray();
+
+    res.json({
+      items: notes,
+      total: notes.length,
+    });
+  } catch (error) {
+    console.error("[GET /api/notes error]:", error);
+    res.status(500).json({ message: "Server error while fetching notes" });
+  }
+});
+
 // নোট তৈরি বা হ্যান্ডেল করার রাউট (Line 68 'possibly undefined' এরর ফিক্সড)
 router.post("/", verifySession, async (req: Request, res: Response) => {
   const authReq = req as AuthenticatedRequest;

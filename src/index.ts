@@ -7,6 +7,8 @@ import { auth } from "./lib/auth.js";
 // 🌟 ১. আপনার টপিক রাউটটি ইম্পোর্ট করুন (পাথ ঠিক আছে কিনা দেখে নেবেন)
 import topicRouter from "./routes/topics.routes.js";
 import recommendationsRouter from "./routes/recommendations.routes.js";
+import notesRouter from "./routes/notes.routes.js";
+import topicsRouter from "./routes/topics.routes.js";
 
 dotenv.config();
 
@@ -36,6 +38,9 @@ app.all("/api/auth/*any", toNodeHandler(auth));
 app.use("/api/topics", topicRouter);
 
 app.use("/api/recommendations", recommendationsRouter);
+
+app.use("/api/notes", notesRouter);
+app.use("/api/topics", topicsRouter);
 
 /* -------------------------------------------------------------------------- */
 /*                                Health Check                                */
