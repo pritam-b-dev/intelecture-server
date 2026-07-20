@@ -6,7 +6,6 @@ import { db } from "./db.js";
 const clientUrl = process.env.CLIENT_URL || "http://localhost:3000";
 
 export const auth = betterAuth({
-  baseURL: process.env.BETTER_AUTH_URL,
   // Native MongoDB instance passed directly to the adapter
   database: mongodbAdapter(db),
 
