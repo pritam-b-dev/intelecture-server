@@ -1,65 +1,48 @@
 import { Router, Request, Response } from "express";
-import { ObjectId } from "mongodb";
 import { verifySession } from "../middleware/verifySession.js";
-import { recommendationsCollection } from "../lib/db.js";
-import { recommendTopicsForUser } from "../agents/recommendationAgent.js";
-import { Recommendation } from "../types/index.js";
+import { conceptsCollection, topicsCollection } from "../lib/db.js";
 
 interface AuthenticatedRequest extends Request {
-  user?: {
-    id: string;
-    name: string;
-    email: string;
-    role: "user" | "admin";
-    learningLevel?: "beginner" | "intermediate" | "advanced";
-  };
-}
-
-interface RecommendationDocument extends Recommendation {
-  userId: string;
-  _id?: ObjectId;
+  user?: { id: string; name: string; email: string; role: "user" | "admin" };
 }
 
 const router = Router();
 
-/**
- * 🌟 B8: GET /api/recommendations
- * Fetch recommendations for user (B6 Logic Agent)
- * Return structure: [{conceptId, conceptName, topicId, topicName, reason, priority, difficulty, aiGenerated}]
- */
 router.get("/", verifySession, async (req: Request, res: Response) => {
   const authReq = req as AuthenticatedRequest;
-
   try {
-    const userId = authReq.user!.id;
-    const { refresh } = req.query;
+    const myTopics = await topicsCollection
+      .find({ ownerId: authReq.user!.id })
+      .toArray();
+    const topicMap = new Map(
+      myTopics.map((t: any) => [t._id.toString(), t.name]),
+    );
+    const topicIds = myTopics.map((t: any) => t._id.toString());
 
-    // ১. ফোর্স রিফ্রেশ (?refresh=true) না থাকলে ক্যাশ (recommendationsCollection) থেকে রিড
-    if (refresh !== "true") {
-      const cachedRecs = (await recommendationsCollection
-        .find({ userId } as any)
-        .toArray()) as unknown as RecommendationDocument[];
+    const candidates = await conceptsCollection
+      .find({ topicId: { $in: topicIds }, status: { $ne: "mastered" } })
+      .sort({ difficulty: 1 })
+      .limit(5)
+      .toArray();
 
-      if (cachedRecs.length > 0) {
-        const recommendations: Recommendation[] = cachedRecs.map(
-          ({ userId: _, _id: __, ...rec }) => rec,
-        );
+    const items = candidates.map((c: any, index: number) => ({
+      conceptId: c._id.toString(),
+      conceptName: c.name,
+      topicId: c.topicId,
+      topicName: topicMap.get(c.topicId) || "Unknown Topic",
+      reason:
+        c.status === "learning"
+          ? "You're already learning this — keep going!"
+          : "Good next step based on difficulty level",
+      priority: index === 0 ? 1 : index < 3 ? 2 : 3,
+      difficulty: c.difficulty,
+      aiGenerated: true,
+      generatedAt: new Date().toISOString(),
+    }));
 
-        return res.json(recommendations);
-      }
-    }
-
-    // ২. B6 logic agent থেকে রেকমেন্ডেশন জেনারেট করা (এখনকার জন্য pure logic)
-    // 💡 B12-তে গিয়ে এখানে LLM দিয়ে 'reason' পাঠটি এনরিচ করা হবে
-    const recommendations = await recommendTopicsForUser(userId);
-
-    // প্রম্পট অনুযায়ী সরাসরি Recommendations-এর Array রিটার্ন করা হচ্ছে
-    res.json(recommendations);
+    res.json({ items, total: items.length });
   } catch (error) {
-    console.error("[GET /api/recommendations error]:", error);
-    res
-      .status(500)
-      .json({ message: "Server error while fetching recommendations" });
+    res.status(500).json({ success: false, message: "Server error" });
   }
 });
 

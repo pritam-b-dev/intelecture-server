@@ -2,73 +2,109 @@ import { Router, Request, Response } from "express";
 import { ObjectId } from "mongodb";
 import { Concept } from "../types/index.js";
 import { verifySession } from "../middleware/verifySession.js";
-import { conceptsCollection } from "../lib/db.js";
-// 🌟 আপনার এক্সপোর্ট করা টাইপড কালেকশন ইম্পোর্ট করুন (পাথটি আপনার প্রজেক্ট অনুযায়ী চেক করে নেবেন)
+import { conceptsCollection, topicsCollection } from "../lib/db.js";
 
 interface AuthenticatedRequest extends Request {
-  user?: {
-    id: string;
-    name: string;
-    email: string;
-    role: "user" | "admin";
-    learningLevel?: "beginner" | "intermediate" | "advanced";
-  };
+  user?: { id: string; name: string; email: string; role: "user" | "admin" };
 }
 
 const router = Router();
 
-// ১. কনসেপ্ট তৈরি করার রাউট (Line 61-62 ডেট এরর ফিক্সড)
+router.get("/", verifySession, async (req: Request, res: Response) => {
+  try {
+    const topicId = req.query.topicId as string;
+    if (!topicId)
+      return res.status(400).json({ message: "topicId is required" });
+    const items = await conceptsCollection
+      .find({ topicId })
+      .sort({ _id: 1 })
+      .toArray();
+    res.json({ items, total: items.length });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
 router.post("/", verifySession, async (req: Request, res: Response) => {
   const authReq = req as AuthenticatedRequest;
   try {
-    const { name, description, difficulty, topicId, status } = authReq.body;
-
-    // 🌟 _id ছাড়া পিওর অবজেক্ট তৈরি করুন
+    const { name, description, difficulty, topicId } = authReq.body;
     const newConcept: Omit<Concept, "_id"> = {
       topicId,
       name,
       description,
       difficulty,
-      status: status || "not_started",
+      status: "not_started",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
-
-    // 🌟 কোনো এরর ছাড়াই পারফেক্টলি ইনসার্ট হবে!
-    // কারণ টাইপস্ক্রিপ্ট এখন জানে যে ConceptDocument-এর _id ইনসার্টের সময় অপশনাল।
-    const result = await conceptsCollection.insertOne(newConcept);
-    res
-      .status(201)
-      .json({ success: true, id: result.insertedId, data: newConcept });
+    const result = await conceptsCollection.insertOne(newConcept as any);
+    await topicsCollection.updateOne(
+      { _id: new ObjectId(topicId) },
+      { $inc: { conceptCount: 1 } },
+    );
+    res.status(201).json({ ...newConcept, _id: result.insertedId });
   } catch (error) {
     res.status(500).json({ success: false, message: "Server error" });
   }
 });
 
-// ২. আইডি দিয়ে কনসেপ্ট খোঁজা বা ফিল্টার করা (Line 108, 115, 160+ ওভারলোড এরর ফিক্সড)
 router.get("/:id", verifySession, async (req: Request, res: Response) => {
   try {
-    // 🌟 'as string' দিয়ে টাইপ কাস্ট করায় string[] এর ঝামেলা শেষ
     const conceptId = req.params.id as string;
-    const topicId = req.query.topicId as string;
-
-    if (!ObjectId.isValid(conceptId)) {
-      return res.status(400).json({ message: "Invalid Concept ID format" });
-    }
-
-    // 🌟 টাইপড কালেকশনে ObjectId দিয়ে খোঁজা
+    if (!ObjectId.isValid(conceptId))
+      return res.status(400).json({ message: "Invalid Concept ID" });
     const concept = await conceptsCollection.findOne({
       _id: new ObjectId(conceptId),
     });
-
-    if (!concept) {
-      return res.status(404).json({ message: "Concept not found" });
-    }
-
-    res.json({ success: true, data: concept });
+    if (!concept) return res.status(404).json({ message: "Concept not found" });
+    res.json(concept);
   } catch (error) {
     res.status(500).json({ success: false, message: "Server error" });
   }
 });
+
+router.patch(
+  "/:id/status",
+  verifySession,
+  async (req: Request, res: Response) => {
+    try {
+      const conceptId = req.params.id as string;
+      const { status } = req.body;
+      if (!ObjectId.isValid(conceptId))
+        return res.status(400).json({ message: "Invalid Concept ID" });
+
+      const concept = await conceptsCollection.findOne({
+        _id: new ObjectId(conceptId),
+      });
+      if (!concept)
+        return res.status(404).json({ message: "Concept not found" });
+
+      await conceptsCollection.updateOne(
+        { _id: new ObjectId(conceptId) },
+        { $set: { status, updatedAt: new Date().toISOString() } },
+      );
+
+      if (status === "mastered" && concept.status !== "mastered") {
+        await topicsCollection.updateOne(
+          { _id: new ObjectId(concept.topicId) },
+          { $inc: { masteredCount: 1 } },
+        );
+      } else if (status !== "mastered" && concept.status === "mastered") {
+        await topicsCollection.updateOne(
+          { _id: new ObjectId(concept.topicId) },
+          { $inc: { masteredCount: -1 } },
+        );
+      }
+
+      const updated = await conceptsCollection.findOne({
+        _id: new ObjectId(conceptId),
+      });
+      res.json(updated);
+    } catch (error) {
+      res.status(500).json({ success: false, message: "Server error" });
+    }
+  },
+);
 
 export default router;
