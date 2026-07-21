@@ -10,20 +10,32 @@ interface AuthenticatedRequest extends Request {
 const router = Router();
 
 router.get("/", verifySession, async (req: Request, res: Response) => {
+  const authReq = req as AuthenticatedRequest;
+
   try {
     const conceptId = req.query.conceptId as string;
-    if (!conceptId)
-      return res.status(400).json({ message: "conceptId is required" });
-    const items = await notesCollection
-      .find({ conceptId })
-      .sort({ _id: -1 })
-      .toArray();
-    res.json({ items, total: items.length });
+
+    const query: any = {
+      userId: authReq.user!.id,
+    };
+
+    if (conceptId) {
+      query.conceptId = conceptId;
+    }
+
+    const items = await notesCollection.find(query).sort({ _id: -1 }).toArray();
+
+    res.json({
+      items,
+      total: items.length,
+    });
   } catch (error) {
-    res.status(500).json({ success: false, message: "Server error" });
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
   }
 });
-
 router.post("/", verifySession, async (req: Request, res: Response) => {
   const authReq = req as AuthenticatedRequest;
   try {
