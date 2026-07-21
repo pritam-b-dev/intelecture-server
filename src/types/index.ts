@@ -28,15 +28,14 @@ export interface Topic {
   name: string;
   description: string;
   category: string;
+  imageUrl?: string;
   ownerId: string;
   ownerName: string;
   conceptCount: number;
   masteredCount: number;
-  createdAt: string; // 🌟 Changed from Date to string
-  updatedAt: string; // 🌟 Changed from Date to string
-  image?: string;
+  createdAt: string;
+  updatedAt: string;
 }
-
 /* -------------------------------------------------------------------------- */
 /*                                Concept Type                                */
 /* -------------------------------------------------------------------------- */

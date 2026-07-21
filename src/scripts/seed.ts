@@ -52,7 +52,7 @@ async function runSeed() {
         name: "Physics",
         description: "Understanding the universe from quarks to galaxies.",
         category: "Science",
-        image:
+        imageUrl:
           "https://images.unsplash.com/photo-1532187643603-ba119ca4109e?w=1200",
         ownerId: userId,
         ownerName: userName,
@@ -65,7 +65,7 @@ async function runSeed() {
         name: "Web Development",
         description: "Building modern web applications.",
         category: "Technology",
-        image:
+        imageUrl:
           "https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=1200",
         ownerId: userId,
         ownerName: userName,
@@ -78,7 +78,7 @@ async function runSeed() {
         name: "Mathematics",
         description: "The language of numbers, shapes, and logic.",
         category: "Math",
-        image:
+        imageUrl:
           "https://images.unsplash.com/photo-1509228468518-180dd4864904?w=1200",
         ownerId: userId,
         ownerName: userName,
@@ -91,7 +91,7 @@ async function runSeed() {
         name: "Artificial Intelligence",
         description: "Machine learning, neural networks and modern AI.",
         category: "Technology",
-        image:
+        imageUrl:
           "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=1200",
         ownerId: userId,
         ownerName: userName,
@@ -104,7 +104,7 @@ async function runSeed() {
         name: "Cyber Security",
         description: "Protecting systems and networks from attacks.",
         category: "Technology",
-        image:
+        imageUrl:
           "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=1200",
         ownerId: userId,
         ownerName: userName,
@@ -117,7 +117,7 @@ async function runSeed() {
         name: "Data Science",
         description: "Analyze data to discover useful insights.",
         category: "Technology",
-        image:
+        imageUrl:
           "https://images.unsplash.com/photo-1518186285589-2f7649de83e0?w=1200",
         ownerId: userId,
         ownerName: userName,
@@ -130,7 +130,7 @@ async function runSeed() {
         name: "Chemistry",
         description: "Study of atoms, molecules and chemical reactions.",
         category: "Science",
-        image:
+        imageUrl:
           "https://images.unsplash.com/photo-1532634993-15f421e42ec0?w=1200",
         ownerId: userId,
         ownerName: userName,
@@ -143,7 +143,7 @@ async function runSeed() {
         name: "Biology",
         description: "Explore living organisms and ecosystems.",
         category: "Science",
-        image:
+        imageUrl:
           "https://images.unsplash.com/photo-1530026405186-ed1f139313f8?w=1200",
         ownerId: userId,
         ownerName: userName,
@@ -156,7 +156,7 @@ async function runSeed() {
         name: "UI/UX Design",
         description: "Create intuitive and beautiful digital experiences.",
         category: "Design",
-        image:
+        imageUrl:
           "https://images.unsplash.com/photo-1559028012-481c04fa702d?w=1200",
         ownerId: userId,
         ownerName: userName,

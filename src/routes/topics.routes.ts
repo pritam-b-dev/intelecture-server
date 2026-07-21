@@ -11,14 +11,32 @@ const router = Router();
 
 router.get("/", async (req: Request, res: Response) => {
   try {
-    const { category, sort } = req.query;
+    const { category, sort, search, page, perPage } = req.query;
     const query: any = {};
-    if (category && category !== "all") query.category = category;
+
+    if (category && category !== "all") {
+      query.category = { $regex: `^${category}$`, $options: "i" };
+    }
+    if (search) {
+      query.name = { $regex: search as string, $options: "i" };
+    }
+
     let sortOption: any = { _id: -1 };
     if (sort === "popularity") sortOption = { conceptCount: -1 };
-    const items = await topicsCollection.find(query).sort(sortOption).toArray();
+
+    const pageNum = Number(page) || 1;
+    const perPageNum = Number(perPage) || 8;
+    const skip = (pageNum - 1) * perPageNum;
+
     const total = await topicsCollection.countDocuments(query);
-    res.json({ items, total });
+    const items = await topicsCollection
+      .find(query)
+      .sort(sortOption)
+      .skip(skip)
+      .limit(perPageNum)
+      .toArray();
+
+    res.json({ items, total, page: pageNum, perPage: perPageNum });
   } catch (error) {
     res.status(500).json({ success: false, message: "Server error" });
   }
@@ -53,18 +71,18 @@ router.get("/:id", async (req: Request, res: Response) => {
 router.post("/", verifySession, async (req: Request, res: Response) => {
   const authReq = req as AuthenticatedRequest;
   try {
-    const { name, description, category } = authReq.body;
+    const { name, description, category, imageUrl } = authReq.body;
     const newTopic = {
       name,
       description,
       category,
+      imageUrl: imageUrl || "",
       ownerId: authReq.user!.id,
       ownerName: authReq.user!.name,
       conceptCount: 0,
       masteredCount: 0,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      image: req.body.image || "",
     };
     const result = await topicsCollection.insertOne(newTopic as any);
     res.status(201).json({ ...newTopic, _id: result.insertedId });
