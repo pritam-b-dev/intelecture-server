@@ -69,4 +69,24 @@ router.put("/:id", verifySession, async (req: Request, res: Response) => {
   }
 });
 
+router.delete("/:id", verifySession, async (req: Request, res: Response) => {
+  const authReq = req as AuthenticatedRequest;
+  try {
+    const id = req.params.id as string;
+    if (!ObjectId.isValid(id))
+      return res.status(400).json({ message: "Invalid Note ID" });
+    const result = await notesCollection.deleteOne({
+      _id: new ObjectId(id),
+      userId: authReq.user!.id,
+    });
+    if (result.deletedCount === 0)
+      return res
+        .status(404)
+        .json({ message: "Note not found or unauthorized" });
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
 export default router;
